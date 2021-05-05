@@ -15,8 +15,6 @@ find_package(OpenGL REQUIRED)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/src/CMakeLists.txt)
 
-# glad source files
-
 set(_AlgoViz_extra_src_files
   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glad/src/glad.c
   ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui/imgui.cpp
