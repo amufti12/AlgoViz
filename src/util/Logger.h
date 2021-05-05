@@ -1,5 +1,5 @@
-#ifndef LOGL_LOGGER_H
-#define LOGL_LOGGER_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -20,31 +20,31 @@ public:
   static void Init();
 
   template<typename... Args>
-  static void LogTrace(Args &&...args)
+  static void LogTrace(Args&&... args)
   {
     s_Logger->trace(std::forward<Args>(args)...);
   }
 
   template<typename... Args>
-  static void LogInfo(Args &&...args)
+  static void LogInfo(Args&&... args)
   {
     s_Logger->info(std::forward<Args>(args)...);
   }
 
   template<typename... Args>
-  static void LogWarning(Args &&...args)
+  static void LogWarning(Args&&... args)
   {
     s_Logger->warn(std::forward<Args>(args)...);
   }
 
   template<typename... Args>
-  static void LogError(Args &&...args)
+  static void LogError(Args&&... args)
   {
     s_Logger->error(std::forward<Args>(args)...);
   }
 
   template<typename... Args>
-  static void LogCritical(Args &&...args)
+  static void LogCritical(Args&&... args)
   {
     s_Logger->critical(std::forward<Args>(args)...);
   }
