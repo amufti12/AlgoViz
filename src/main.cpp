@@ -12,6 +12,8 @@
 
 #include "util/Logger.h"
 
+#include "Sorts.hpp"
+
 #define AV_UNUSED(x) (void)(x)
 
 int main(int argc, char** argv)
@@ -22,8 +24,41 @@ int main(int argc, char** argv)
   Logger::Init();
   Logger::SetLogLevel(Logger::LogLevel::INFO);
 
+  // Make array you want to test and call function from Sorts
+  int array[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
+  std::cout << "Test Array:\t";
+  for (int i = 0; i < 10; i++) {
+    std::cout << array[i] << " ";
+  }
+  std::cout << std::endl;
+
+  // Selection Sort Test
+  selectionSort(array, 10);
+  std::cout << "Selection Sort:\t";
+  for (int i = 0; i < 10; i++) {
+    std::cout << array[i] << " ";
+  }
+  std::cout << std::endl;
+
+  // Bubble Sort Test
+  bubbleSort(array, 10);
+  std::cout << "Bubble Sort:\t";
+  for (int i = 0; i < 10; i++) {
+    std::cout << array[i] << " ";
+  }
+  std::cout << std::endl;
+
+  // Insertion Sort Test
+  insertionSort(array, 10);
+  std::cout << "Insertion Sort:\t";
+  for (int i = 0; i < 10; i++) {
+    std::cout << array[i] << " ";
+  }
+  std::cout << std::endl;
+
+  /*
   if (glfwInit() != GLFW_TRUE) {
-    LOG_ERROR("GLFW failed to initialize");
+    LOG_ERROR("GLFW failed to initialize {}", 10);
     std::exit(-1);
   }
 
@@ -81,4 +116,5 @@ int main(int argc, char** argv)
   ImGui::DestroyContext();
 
   glfwTerminate();
+  */
 }
