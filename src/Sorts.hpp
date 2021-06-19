@@ -68,72 +68,69 @@ void insertionSort(int* arr, int size)
 // It there is only one element in list then it is sorted - return
 // Divide the list recursively into two halves until end
 // Merge the smaller lists into new list in sorted order
-//////// (as seen on GfG - still personally going through it to understand it)
-// Merges two subarrays of arr[].
-// First subarray is arr[l..m]
-// Second subarray is arr[m+1..r]
-void merge(int arr[], int l, int m, int r)
+//
+// Merges two subarrays of arr[]. The left: arr[l..m] and the right: arr[m+1..r]
+void merge(int* arr, int l, int m, int r)
 {
-  int n1 = m - l + 1;
-  int n2 = r - m;
+  // Initializing nl and nr as the size of the left and right sub arrays
+  int nl = m - l + 1;
+  int nr = r - m;
 
-  // Create temp arrays
-  int L[n1], R[n2];
+  // Create temp arrays left and right
+  int* Larr = new int[nl];
+  int* Rarr = new int[nr];
 
-  // Copy data to temp arrays L[] and R[]
-  for (int i = 0; i < n1; i++)
-    L[i] = arr[l + i];
-  for (int j = 0; j < n2; j++)
-    R[j] = arr[m + 1 + j];
+  // Copy data to temp arrays Larr[] and Rarr[]
+  for (int i = 0; i < nl; i++) {
+    Larr[i] = arr[l + i];
+  }
+  for (int j = 0; j < nr; j++) {
+    Rarr[j] = arr[m + 1 + j];
+  }
 
-  // Merge the temp arrays back into arr[l..r]
-
-  // Initial index of first subarray
+  // Initial index of first, second, and third subarray
   int i = 0;
-
-  // Initial index of second subarray
   int j = 0;
-
-  // Initial index of merged subarray
   int k = l;
 
-  while (i < n1 && j < n2) {
-    if (L[i] <= R[j]) {
-      arr[k] = L[i];
+  // Merge the temp arrays back into arr[l..r]
+  while (i < nl && j < nr) {
+    if (Larr[i] <= Rarr[j]) {
+      arr[k] = Larr[i];
       i++;
     } else {
-      arr[k] = R[j];
+      arr[k] = Rarr[j];
       j++;
     }
     k++;
   }
 
-  // Copy the remaining elements of
-  // L[], if there are any
-  while (i < n1) {
-    arr[k] = L[i];
+  // Copy the remaining elements of L[], if there are any
+  while (i < nl) {
+    arr[k] = Larr[i];
     i++;
     k++;
   }
 
-  // Copy the remaining elements of
-  // R[], if there are any
-  while (j < n2) {
-    arr[k] = R[j];
+  // Copy the remaining elements of R[], if there are any
+  while (j < nr) {
+    arr[k] = Rarr[j];
     j++;
     k++;
   }
+
+  delete Larr;
+  delete Rarr;
 }
 
-// l is for left index and r is
-// right index of the sub-array
-// of arr to be sorted */
-void mergeSort(int arr[], int l, int r)
+// l is for left index and r is right index of the sub-array of arr to be sorted
+void mergeSort(int* arr, int l, int r)
 {
   if (l >= r) {
     return; // returns recursively
   }
   int m = l + (r - l) / 2;
+  // Sorts the first and second arrays then merges them
   mergeSort(arr, l, m);
   mergeSort(arr, m + 1, r);
   merge(arr, l, m, r);

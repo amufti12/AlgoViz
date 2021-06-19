@@ -41,18 +41,29 @@ int main(int argc, char** argv)
   std::cout << std::endl;
 
   // Bubble Sort Test
-  bubbleSort(array, 10);
+  int array2[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
+  bubbleSort(array2, 10);
   std::cout << "Bubble Sort:\t";
   for (int i = 0; i < 10; i++) {
-    std::cout << array[i] << " ";
+    std::cout << array2[i] << " ";
   }
   std::cout << std::endl;
 
   // Insertion Sort Test
-  insertionSort(array, 10);
+  int array3[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
+  insertionSort(array3, 10);
   std::cout << "Insertion Sort:\t";
   for (int i = 0; i < 10; i++) {
-    std::cout << array[i] << " ";
+    std::cout << array3[i] << " ";
+  }
+  std::cout << std::endl;
+
+  // Merge Sort Test
+  int array4[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
+  mergeSort(array4, 0, 9);
+  std::cout << "Merge Sort:\t";
+  for (int i = 0; i < 10; i++) {
+    std::cout << array4[i] << " ";
   }
   std::cout << std::endl;
 
