@@ -6,6 +6,7 @@ set(_AlgoViz_srcs
 
 set(_AlgoViz_hdrs
   src/Sorts.hpp
+  src/Utils.h
   
   src/util/Logger.h
 )

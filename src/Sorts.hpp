@@ -1,17 +1,19 @@
 #ifndef SORTS_HPP_
 #define SORTS_HPP_
 
+#include "Utils.h"
+
 // Swapping indexes
-void swap(int* a, int* b)
+void swap(SortableRenderData* a, SortableRenderData* b)
 {
-  int temp;
+  SortableRenderData temp;
   temp = *a;
   *a = *b;
   *b = temp;
 }
 //////// Selection Sort - find minimum element in arr and place at beginning
 // Time comp: O(n^2), Space Comp: O(1)
-void selectionSort(int* arr, int size)
+void selectionSort(SortableRenderData* arr, int size)
 {
   int i, j, imin;
   for (i = 0; i < size - 1; i++) {
@@ -26,7 +28,7 @@ void selectionSort(int* arr, int size)
   }
 }
 //////// Bubble Sort - swapping adjacent elements until sorted
-void bubbleSort(int* arr, int size)
+void bubbleSort(SortableRenderData* arr, int size)
 {
   for (int i = 0; i < size; i++) {
     // Detecting if there is a swap
@@ -49,9 +51,10 @@ void bubbleSort(int* arr, int size)
 // It the key element is smaller than its predecessor
 // compare it to the elements before. Move the greater elements
 // one positionup to make space for the swapped element
-void insertionSort(int* arr, int size)
+void insertionSort(SortableRenderData* arr, int size)
 {
-  int key, j;
+  SortableRenderData key;
+  int j;
   for (int i = 1; i < size; i++) {
     key = arr[i]; // take value
     j = i;
@@ -71,15 +74,15 @@ Divide the list recursively into two halves until end
 Merge the smaller lists into new list in sorted order
 */
 // Merges two subarrays of arr[]. The left: arr[l..m] and the right: arr[m+1..r]
-void merge(int* arr, int l, int m, int r)
+void merge(SortableRenderData* arr, int l, int m, int r)
 {
   // Initializing nl and nr as the size of the left and right sub arrays
   int nl = m - l + 1;
   int nr = r - m;
 
   // Create temp arrays left and right
-  int* Larr = new int[nl];
-  int* Rarr = new int[nr];
+  SortableRenderData* Larr = new SortableRenderData[nl];
+  SortableRenderData* Rarr = new SortableRenderData[nr];
 
   // Copy data to temp arrays Larr[] and Rarr[]
   for (int i = 0; i < nl; i++) {
@@ -125,7 +128,7 @@ void merge(int* arr, int l, int m, int r)
 }
 
 // l is for left index and r is right index of the sub-array of arr to be sorted
-void mergeSort(int* arr, int l, int r)
+void mergeSort(SortableRenderData* arr, int l, int r)
 {
   if (l >= r) {
     return; // returns recursively
@@ -149,7 +152,7 @@ void mergeSort(int* arr, int l, int r)
 - If left >= right, the point where they met is the new pivot
 */
 // Partition function to split array based on values at high as pivot value
-int Partition(int* arr, int low, int high)
+int Partition(SortableRenderData* arr, int low, int high)
 {
   int pivot, index, i;
   index = low;
@@ -165,7 +168,7 @@ int Partition(int* arr, int low, int high)
   return index;
 }
 // Randomly selecting our pivot
-int RandomPivotSelection(int* arr, int low, int high)
+int RandomPivotSelection(SortableRenderData* arr, int low, int high)
 {
   int pivot, n;
   n = rand();
@@ -174,7 +177,7 @@ int RandomPivotSelection(int* arr, int low, int high)
   swap(&arr[high], &arr[pivot]);
   return Partition(arr, low, high);
 }
-void quickSort(int* arr, int p, int q)
+void quickSort(SortableRenderData* arr, int p, int q)
 {
   // Recursively sorting list
   int pindex;

@@ -14,7 +14,16 @@
 
 #include "Sorts.hpp"
 
+#include "Utils.h"
+
 #define AV_UNUSED(x) (void)(x)
+
+void GetArray(SortableRenderData* array, int size)
+{
+  for (int i = 0; i < size; i++) {
+    array[i].data = rand() / float(RAND_MAX);
+  }
+}
 
 int main(int argc, char** argv)
 {
@@ -25,7 +34,8 @@ int main(int argc, char** argv)
   Logger::SetLogLevel(Logger::LogLevel::INFO);
 
   // Make array you want to test and call function from Sorts
-  int array[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
+  SortableRenderData array[10];
+  GetArray(array, 10);
   std::cout << "Test Array:\t";
   for (int i = 0; i < 10; i++) {
     std::cout << array[i] << " ";
@@ -41,42 +51,41 @@ int main(int argc, char** argv)
   std::cout << std::endl;
 
   // Bubble Sort Test
-  int array2[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
-  bubbleSort(array2, 10);
+  GetArray(array, 10);
+  bubbleSort(array, 10);
   std::cout << "Bubble Sort:\t";
   for (int i = 0; i < 10; i++) {
-    std::cout << array2[i] << " ";
+    std::cout << array[i] << " ";
   }
   std::cout << std::endl;
 
   // Insertion Sort Test
-  int array3[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
-  insertionSort(array3, 10);
+  GetArray(array, 10);
+  insertionSort(array, 10);
   std::cout << "Insertion Sort:\t";
   for (int i = 0; i < 10; i++) {
-    std::cout << array3[i] << " ";
+    std::cout << array[i] << " ";
   }
   std::cout << std::endl;
 
   // Merge Sort Test
-  int array4[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
-  mergeSort(array4, 0, 9);
+  GetArray(array, 10);
+  mergeSort(array, 0, 9);
   std::cout << "Merge Sort:\t";
   for (int i = 0; i < 10; i++) {
-    std::cout << array4[i] << " ";
+    std::cout << array[i] << " ";
   }
   std::cout << std::endl;
 
   // Quick Sort Test
-  int array5[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
-  mergeSort(array5, 0, 9);
+  GetArray(array, 10);
+  mergeSort(array, 0, 9);
   std::cout << "Quick Sort:\t";
   for (int i = 0; i < 10; i++) {
-    std::cout << array5[i] << " ";
+    std::cout << array[i] << " ";
   }
   std::cout << std::endl;
-
-  /*
+  ////////////////////////////////////////////////////////
   if (glfwInit() != GLFW_TRUE) {
     LOG_ERROR("GLFW failed to initialize {}", 10);
     std::exit(-1);
@@ -98,19 +107,19 @@ int main(int argc, char** argv)
     std::exit(-1);
   }
 
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO();
-  AV_UNUSED(io);
+  // IMGUI_CHECKVERSION();
+  // ImGui::CreateContext();
+  // ImGuiIO& io = ImGui::GetIO();
+  // AV_UNUSED(io);
 
-  ImGui::StyleColorsDark();
+  // ImGui::StyleColorsDark();
 
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init("#version 460");
+  // ImGui_ImplGlfw_InitForOpenGL(window, true);
+  // ImGui_ImplOpenGL3_Init("#version 460");
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-  bool show = true;
+  // bool show = true;
   while (!glfwWindowShouldClose(window)) {
     // Get user input
     glfwPollEvents();
@@ -118,23 +127,22 @@ int main(int argc, char** argv)
     // Render
     glClear(GL_COLOR_BUFFER_BIT);
 
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+    // ImGui_ImplOpenGL3_NewFrame();
+    // ImGui_ImplGlfw_NewFrame();
+    // ImGui::NewFrame();
 
-    ImGui::ShowDemoWindow(&show);
+    // ImGui::ShowDemoWindow(&show);
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    // ImGui::Render();
+    // ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     // Put the render on the screen
     glfwSwapBuffers(window);
   }
 
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
+  // ImGui_ImplOpenGL3_Shutdown();
+  // ImGui_ImplGlfw_Shutdown();
+  // ImGui::DestroyContext();
 
   glfwTerminate();
-  */
 }
