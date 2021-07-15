@@ -9,7 +9,7 @@ void swap(int* a, int* b)
   *a = *b;
   *b = temp;
 }
-// Selection Sort - find minimum element in arr and place at beginning
+//////// Selection Sort - find minimum element in arr and place at beginning
 // Time comp: O(n^2), Space Comp: O(1)
 void selectionSort(int* arr, int size)
 {
@@ -25,7 +25,7 @@ void selectionSort(int* arr, int size)
     swap(&arr[i], &arr[imin]);
   }
 }
-// Bubble Sort - swapping adjacent elements until sorted
+//////// Bubble Sort - swapping adjacent elements until sorted
 void bubbleSort(int* arr, int size)
 {
   for (int i = 0; i < size; i++) {
@@ -43,7 +43,7 @@ void bubbleSort(int* arr, int size)
     }
   }
 }
-// Insertion Sort - Sorting an array of size n in ascending order:
+//////// Insertion Sort - Sorting an array of size n in ascending order:
 // Iterate from arr[1] to arr[n] over the array
 // Compare the current element (key) to its predecessor
 // It the key element is smaller than its predecessor
@@ -64,11 +64,12 @@ void insertionSort(int* arr, int size)
   }
 }
 
-// Merge Sort
-// It there is only one element in list then it is sorted - return
-// Divide the list recursively into two halves until end
-// Merge the smaller lists into new list in sorted order
-//
+//////// Merge Sort
+/*
+It there is only one element in list then it is sorted - return
+Divide the list recursively into two halves until end
+Merge the smaller lists into new list in sorted order
+*/
 // Merges two subarrays of arr[]. The left: arr[l..m] and the right: arr[m+1..r]
 void merge(int* arr, int l, int m, int r)
 {
@@ -136,11 +137,58 @@ void mergeSort(int* arr, int l, int r)
   merge(arr, l, m, r);
 }
 
-// Quick Sort
+//////// Quick Sort
+/*
+- Choose the highest index value as pivot val
+- Take two variables to point left and right of the list excluding pivot val
+- Left points to the low index
+- Right points to the  high index
+- While value at left is less than pivot move right
+- While value at right is greater than pivot move left
+- If both set 5 and step 6 does not match swap left and right
+- If left >= right, the point where they met is the new pivot
+*/
+// Partition function to split array based on values at high as pivot value
+int Partition(int* arr, int low, int high)
+{
+  int pivot, index, i;
+  index = low;
+  pivot = high;
+  for (i = low; i < high; i++) {
+    // Find the index of the pivot
+    if (arr[i] < arr[pivot]) {
+      swap(&arr[i], &arr[index]);
+      index++;
+    }
+  }
+  swap(&arr[pivot], &arr[index]);
+  return index;
+}
+// Randomly selecting our pivot
+int RandomPivotSelection(int* arr, int low, int high)
+{
+  int pivot, n;
+  n = rand();
+  // Randomizing pivot value from the sub-array
+  pivot = low + n % (high - low + 1);
+  swap(&arr[high], &arr[pivot]);
+  return Partition(arr, low, high);
+}
+void quickSort(int* arr, int p, int q)
+{
+  // Recursively sorting list
+  int pindex;
+  if (p < q) {
+    pindex = RandomPivotSelection(arr, p, q);
+    // Recursive QuickSort
+    quickSort(arr, p, pindex - 1);
+    quickSort(arr, pindex + 1, q);
+  }
+}
 
-// Heap Sort
+//////// Heap Sort
 
-// Radix Sort
+//////// Radix Sort
 
-// Binary Insertion Sort
+//////// Binary Insertion Sort
 #endif

@@ -67,6 +67,15 @@ int main(int argc, char** argv)
   }
   std::cout << std::endl;
 
+  // Quick Sort Test
+  int array5[] = { 4, 1, 6, 7, 9, 3, 5, 8, 10, 2 };
+  mergeSort(array5, 0, 9);
+  std::cout << "Quick Sort:\t";
+  for (int i = 0; i < 10; i++) {
+    std::cout << array5[i] << " ";
+  }
+  std::cout << std::endl;
+
   /*
   if (glfwInit() != GLFW_TRUE) {
     LOG_ERROR("GLFW failed to initialize {}", 10);
