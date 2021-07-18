@@ -2,11 +2,14 @@
 #define UTILS_H
 
 #include <glad/glad.h>
+#include <thread>
 
-struct SortableRenderData
+std::mutex sortMutex;
+
+struct VisualizationRectangle
 {
 public:
-  SortableRenderData()
+  VisualizationRectangle()
   {
     // Initializing VAO, (initilize 1 vao then bind)
     glGenVertexArrays(1, &vao);
@@ -15,12 +18,9 @@ public:
     // Initializing VBO
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, 24 * sizeof(float), vertexData, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), vertexData, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
 
     // Initializing EBO
     glGenBuffers(1, &ebo);
@@ -33,6 +33,33 @@ public:
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   }
 
+public:
+  // Vertex array object
+  uint32_t vao;
+  // Vertex buffer object
+  uint32_t vbo;
+  // Element buffer object
+  uint32_t ebo;
+
+private:
+  inline static float vertexData[] = {
+    0.0f, 1.0f, 0.0f, //
+    0.0f, 0.0f, 0.0f, //
+    1.0f, 1.0f, 0.0f, //
+    1.0f, 0.0f, 0.0f  //
+  };
+
+  // Order to run the vertecies (both in winding order)
+  inline static uint32_t indicies[] = {
+    0, 1, 2, //
+    2, 1, 3  //
+  };
+};
+
+struct SortableRenderData
+{
+public:
+  // Overloading operator section
   bool operator<(const SortableRenderData& srd) { return data < srd.data; }
 
   bool operator>(const SortableRenderData& srd) { return data > srd.data; }
@@ -45,35 +72,10 @@ public:
 
 public:
   float data;
-  // Vertex array object
-  uint32_t vao;
-  // Vertex buffer object
-  uint32_t vbo;
-  // Element buffer object
-  uint32_t ebo;
 
-  bool sorted;
+  bool selected;
 
-private:
-  inline static float vertexData[] = {
-    0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, //
-    0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, //
-    1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, //
-    1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f  //
-  };
-
-  // inline static float vertexData[] = {
-  //   -0.5f, 0.5f,  0.0f, 1.0f, 0.0f, 0.0f, //
-  //   0.5f,  0.5f,  0.0f, 1.0f, 1.0f, 0.0f, //
-  //   -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, //
-  //   0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 1.0f  //
-  // };
-
-  // Order to run the vertecies (both in winding order)
-  inline static uint32_t indicies[] = {
-    0, 1, 2, //
-    2, 1, 3  //
-  };
+  // bool pivot;
 };
 
 std::ostream& operator<<(std::ostream& os, const SortableRenderData& srd)

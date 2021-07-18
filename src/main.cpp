@@ -1,11 +1,8 @@
-#include <iostream>
-
 #include <algorithm>
-
-#include <imgui.h>
-
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
+#include <chrono>
+#include <future>
+#include <iostream>
+#include <thread> // Allows us the creates new threads
 
 #include <glad/glad.h>
 
@@ -17,13 +14,13 @@
 #include <glm/gtc/type_ptr.hpp>
 #pragma warning(pop)
 
+#include "Sorts.hpp"
+#include "Utils.h"
 #include "util/Logger.h"
 
-#include "Sorts.hpp"
-
-#include "Utils.h"
-
 #define AV_UNUSED(x) (void)(x)
+
+using namespace std::chrono_literals;
 
 void GetArray(SortableRenderData* array, int size)
 {
@@ -126,22 +123,22 @@ int main(int argc, char** argv)
   // --Vertex shader source
   const char* vertSource = "#version 460 core\n"
                            "layout (location = 0) in vec3 iPos;\n"
-                           "layout (location = 1) in vec3 iMystery;\n"
                            "uniform mat4 model;\n"
                            "uniform mat4 projection;\n"
+                           "uniform vec3 color;\n"
                            "\n"
-                           "out vec3 oMystery;"
+                           "out vec3 oColor;"
                            "void main() {\n"
                            "  gl_Position = projection * model * vec4(iPos, 1.0);\n"
-                           "  oMystery = iMystery;\n"
+                           "  oColor = color;\n"
                            "}\n";
 
   // --Fragment Shader source (outputs color)
   const char* fragSource = "#version 460 core\n"
-                           "in vec3 oMystery;\n"
+                           "in vec3 oColor;\n"
                            "out vec4 fragColor;\n"
                            "void main(){\n"
-                           "  fragColor = vec4(oMystery, 1.0);\n"
+                           "  fragColor = vec4(oColor, 1.0);\n"
                            "}\n";
 
   // Compiling the Shader
@@ -197,17 +194,26 @@ int main(int argc, char** argv)
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-  SortableRenderData array[100];
-  GetArray(array, 100);
-  selectionSort(array, 100);
-  std::cout << "Selection Sort:\t";
-  for (int i = 0; i < 100; i++) {
-    std::cout << array[i] << " ";
-  }
-  std::cout << std::endl;
+  // Creating random array (NUMBER OF ELEMENTS HERE)
+  std::vector<SortableRenderData> array(100);
+  // SortableRenderData array[100];
+  GetArray(array.data(), static_cast<int32_t>(array.size()));
 
   glm::vec2 position(0.0f, 0.0f);
-  float diff = 1280.0f / 100.0f;
+  float diff = 1280.0f / array.size();
+
+  /////NOTE: WE DON'T EVER WAIT FOR THE FUNCTION TO FINISH
+  std::future<void> f =
+    std::async(std::launch::async, Sort, array.data(), int32_t(array.size()), SortType::SELECTION, []() {
+      // Sleep thread section
+      std::this_thread::sleep_for(50ms);
+    });
+
+  static VisualizationRectangle rect;
+
+  glm::vec3 defaultColor(1.0f, 1.0f, 1.0f);
+  glm::vec3 selectedColor(1.0f, 0.0f, 0.0f);
+  // glm::vec3 pivotColor(0.0f, 1.0f, 0.0f);
 
   while (!glfwWindowShouldClose(window)) {
     // Get user input
@@ -216,27 +222,48 @@ int main(int argc, char** argv)
     // Render
     glClear(GL_COLOR_BUFFER_BIT);
 
-    for (int i = 0; i < 100; i++) {
-      SortableRenderData srd = array[i];
-      glm::mat4 projection = glm::ortho(0.0f, 1280.0f, 720.0f, 0.0f);
-      glm::mat4 model = glm::mat4(1);
-      model = glm::translate(model, glm::vec3(position.x, position.y, 0.0f));
-      model = glm::scale(model, glm::vec3(1280.0f / 100.0f, srd.data * 720.0f, 1.0f));
+    {
+      std::lock_guard<std::mutex> lock(sortMutex);
+      for (int i = 0; i < array.size(); i++) {
+        SortableRenderData srd = array[i];
+        glm::mat4 projection = glm::ortho(0.0f, 1280.0f, 720.0f, 0.0f);
+        glm::mat4 model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(position.x, 720.0f - (srd.data * 720.0f), 0.0f));
+        model = glm::scale(model, glm::vec3(1280.0f / array.size(), srd.data * 720.0f, 1.0f));
 
-      glUseProgram(program);
-      glUniformMatrix4fv(
-        glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-      glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-      glBindVertexArray(srd.vao);
-      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-      glBindVertexArray(0);
-      position.x += diff;
+        glUseProgram(program);
+        glUniformMatrix4fv(
+          glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+        if (srd.selected) {
+          array[i].selected = false;
+          glUniform3f(
+            glGetUniformLocation(program, "color"), selectedColor.r, selectedColor.g, selectedColor.b);
+        } else {
+          glUniform3f(glGetUniformLocation(program, "color"), defaultColor.r, defaultColor.g, defaultColor.b);
+        }
+
+        // if (srd.pivot) {
+        //   array[i].pivot = false;
+        //   glUniform3f(glGetUniformLocation(program, "color"), pivotColor.r, pivotColor.g, pivotColor.b);
+        // } else {
+        //   glUniform3f(glGetUniformLocation(program, "color"), defaultColor.r, defaultColor.g,
+        //   defaultColor.b);
+        // }
+
+        glBindVertexArray(rect.vao);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+        position.x += diff;
+      }
     }
+
     position = glm::vec3(0.0f, 0.0f, 0.0f);
 
     // Put the render on the screen
     glfwSwapBuffers(window);
   }
-
   glfwTerminate();
+  f.get();
 }
