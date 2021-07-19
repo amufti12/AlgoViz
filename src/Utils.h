@@ -1,10 +1,16 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <chrono>
+#include <future>
 #include <glad/glad.h>
 #include <thread>
 
+using namespace std::chrono_literals;
+
 std::mutex sortMutex;
+std::mutex updateFreqMutex;
+int numUpdatesPerSec = 1;
 
 struct VisualizationRectangle
 {

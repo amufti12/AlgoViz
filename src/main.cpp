@@ -4,6 +4,14 @@
 #include <iostream>
 #include <thread> // Allows us the creates new threads
 
+#include <Windows.h>
+#include <processthreadsapi.h>
+
+#include <imgui.h>
+
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
 #include <glad/glad.h>
 
 #include <GLFW/glfw3.h>
@@ -22,6 +30,7 @@
 
 using namespace std::chrono_literals;
 
+//
 void GetArray(SortableRenderData* array, int size)
 {
   for (int i = 0; i < size; i++) {
@@ -39,60 +48,10 @@ int main(int argc, char** argv)
   Logger::Init();
   Logger::SetLogLevel(Logger::LogLevel::INFO);
 
-  // ////////////////////////////////////////////////////////
-  // // SORTING ALGORITHM TEST SECTION
-  // // Make array you want to test and call function from Sorts
-  // SortableRenderData array[10];
-  // GetArray(array, 10);
-  // std::cout << "Test Array:\t";
-  // for (int i = 0; i < 10; i++) {
-  //   std::cout << array[i] << " ";
-  // }
-  // std::cout << std::endl;
+  SortType sortTypeComboList[] = {
+    SortType::SELECTION, SortType::BUBBLE, SortType::INSERTION, SortType::MERGE, SortType::QUICK
+  };
 
-  // // Selection Sort Test
-  // selectionSort(array, 10);
-  // std::cout << "Selection Sort:\t";
-  // for (int i = 0; i < 10; i++) {
-  //   std::cout << array[i] << " ";
-  // }
-  // std::cout << std::endl;
-
-  // // Bubble Sort Test
-  // GetArray(array, 10);
-  // bubbleSort(array, 10);
-  // std::cout << "Bubble Sort:\t";
-  // for (int i = 0; i < 10; i++) {
-  //   std::cout << array[i] << " ";
-  // }
-  // std::cout << std::endl;
-
-  // // Insertion Sort Test
-  // GetArray(array, 10);
-  // insertionSort(array, 10);
-  // std::cout << "Insertion Sort:\t";
-  // for (int i = 0; i < 10; i++) {
-  //   std::cout << array[i] << " ";
-  // }
-  // std::cout << std::endl;
-
-  // // Merge Sort Test
-  // GetArray(array, 10);
-  // mergeSort(array, 0, 9);
-  // std::cout << "Merge Sort:\t";
-  // for (int i = 0; i < 10; i++) {
-  //   std::cout << array[i] << " ";
-  // }
-  // std::cout << std::endl;
-
-  // // Quick Sort Test
-  // GetArray(array, 10);
-  // mergeSort(array, 0, 9);
-  // std::cout << "Quick Sort:\t";
-  // for (int i = 0; i < 10; i++) {
-  //   std::cout << array[i] << " ";
-  // }
-  // std::cout << std::endl;
   ////////////////////////////////////////////////////////
   // CREATING GLFW WINDOW SECTION
   if (glfwInit() != GLFW_TRUE) {
@@ -202,18 +161,24 @@ int main(int argc, char** argv)
   glm::vec2 position(0.0f, 0.0f);
   float diff = 1280.0f / array.size();
 
-  /////NOTE: WE DON'T EVER WAIT FOR THE FUNCTION TO FINISH
-  std::future<void> f =
-    std::async(std::launch::async, Sort, array.data(), int32_t(array.size()), SortType::SELECTION, []() {
-      // Sleep thread section
-      std::this_thread::sleep_for(50ms);
-    });
-
   static VisualizationRectangle rect;
 
   glm::vec3 defaultColor(1.0f, 1.0f, 1.0f);
   glm::vec3 selectedColor(1.0f, 0.0f, 0.0f);
   // glm::vec3 pivotColor(0.0f, 1.0f, 0.0f);
+
+  //// IMGUI SECTION
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO();
+  AV_UNUSED(io);
+  ImGui::StyleColorsDark();
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init("#version 460");
+
+  std::thread launch_thread;
+  std::promise<void> p;
+  std::future<void> f;
 
   while (!glfwWindowShouldClose(window)) {
     // Get user input
@@ -261,9 +226,58 @@ int main(int argc, char** argv)
 
     position = glm::vec3(0.0f, 0.0f, 0.0f);
 
+    // Displaying the UI Window
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    bool clicked = false;
+    bool resetClicked = false;
+    static int item_current = 0;
+    {
+      ImGui::Begin("Test Window");
+      ImGui::Text("This is some text");
+      ImGui::DragInt("Updates Per Second", &numUpdatesPerSec, 1.0f, 1, 100);
+      const char* items[] = { "Selection", "Bubble", "Insertion", "Merge", "Quick" };
+      ImGui::Combo("Available Sorts", &item_current, items, IM_ARRAYSIZE(items));
+      clicked = ImGui::Button("Start");
+      ImGui::SameLine();
+      resetClicked = ImGui::Button("Reset");
+      ImGui::End();
+    }
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    if (clicked || resetClicked) {
+      // Signal sort thread to stop
+      p.set_value();
+      if (launch_thread.joinable()) {
+        // Stop the thread
+        launch_thread.join();
+      }
+
+      // Regenerate the data to sort for next sort
+      GetArray(array.data(), static_cast<int32_t>(array.size()));
+
+      // Reset promise and future and launch thread for sorting again
+      p = std::promise<void>();
+      f = p.get_future();
+      if (clicked) {
+        launch_thread = std::thread(
+          &Sort, array.data(), int32_t(array.size()), sortTypeComboList[item_current], std::ref(f));
+      }
+    }
     // Put the render on the screen
     glfwSwapBuffers(window);
   }
+
+  // Terminate all for shutdown section
+  p.set_value();
+  launch_thread.join();
+
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
+
   glfwTerminate();
   f.get();
 }

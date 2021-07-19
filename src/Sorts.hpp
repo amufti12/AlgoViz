@@ -24,7 +24,7 @@ void swap(SortableRenderData* a, SortableRenderData* b)
 }
 //////// Selection Sort - find minimum element in arr and place at beginning
 // Time comp: O(n^2), Space Comp: O(1)
-void selectionSort(SortableRenderData* arr, int size, std::function<void()>&& sleepFunc)
+void selectionSort(SortableRenderData* arr, int size, std::future<void>& f)
 {
   int i, j, imin;
   for (i = 0; i < size - 1; i++) {
@@ -40,11 +40,21 @@ void selectionSort(SortableRenderData* arr, int size, std::function<void()>&& sl
       arr[i].selected = true;
       swap(&arr[i], &arr[imin]);
     }
-    sleepFunc();
+
+    if (f.wait_for(1ms) != std::future_status::timeout) {
+      return;
+    } else {
+      std::chrono::duration<double> d;
+      {
+        std::lock_guard<std::mutex> lock3(updateFreqMutex);
+        d = 1000ms / numUpdatesPerSec;
+      }
+      std::this_thread::sleep_for(d);
+    }
   }
 }
 //////// Bubble Sort - swapping adjacent elements until sorted
-void bubbleSort(SortableRenderData* arr, int size, std::function<void()>&& sleepFunc)
+void bubbleSort(SortableRenderData* arr, int size, std::future<void>& f)
 {
   for (int i = 0; i < size; i++) {
     // Detecting if there is a swap
@@ -54,7 +64,17 @@ void bubbleSort(SortableRenderData* arr, int size, std::function<void()>&& sleep
         arr[j].selected = true;
         swap(&arr[j], &arr[j + 1]);
         swaps = 1; // setting the swap flag
-        sleepFunc();
+
+        if (f.wait_for(1ms) != std::future_status::timeout) {
+          return;
+        } else {
+          std::chrono::duration<double> d;
+          {
+            std::lock_guard<std::mutex> lock3(updateFreqMutex);
+            d = 1000ms / numUpdatesPerSec;
+          }
+          std::this_thread::sleep_for(d);
+        }
       }
     }
 
@@ -70,7 +90,7 @@ void bubbleSort(SortableRenderData* arr, int size, std::function<void()>&& sleep
 // It the key element is smaller than its predecessor
 // compare it to the elements before. Move the greater elements
 // one positionup to make space for the swapped element
-void insertionSort(SortableRenderData* arr, int size, std::function<void()>&& sleepFunc)
+void insertionSort(SortableRenderData* arr, int size, std::future<void>& f)
 {
   SortableRenderData key;
   int j;
@@ -81,7 +101,17 @@ void insertionSort(SortableRenderData* arr, int size, std::function<void()>&& sl
       arr[j - 1].selected = true;
       arr[j] = arr[j - 1];
       j--;
-      sleepFunc();
+
+      if (f.wait_for(1ms) != std::future_status::timeout) {
+        return;
+      } else {
+        std::chrono::duration<double> d;
+        {
+          std::lock_guard<std::mutex> lock3(updateFreqMutex);
+          d = 1000ms / numUpdatesPerSec;
+        }
+        std::this_thread::sleep_for(d);
+      }
     }
     // inserting it in the right place
     arr[j] = key;
@@ -95,7 +125,7 @@ Divide the list recursively into two halves until end
 Merge the smaller lists into new list in sorted order
 */
 // Merges two subarrays of arr[]. The left: arr[l..m] and the right: arr[m+1..r]
-void merge(SortableRenderData* arr, int l, int m, int r, std::function<void()>&& sleepFunc)
+void merge(SortableRenderData* arr, int l, int m, int r, std::future<void>& f)
 {
   // Initializing nl and nr as the size of the left and right sub arrays
   int nl = m - l + 1;
@@ -124,12 +154,32 @@ void merge(SortableRenderData* arr, int l, int m, int r, std::function<void()>&&
       Larr[i].selected = true;
       arr[k] = Larr[i];
       i++;
-      sleepFunc();
+
+      if (f.wait_for(1ms) != std::future_status::timeout) {
+        return;
+      } else {
+        std::chrono::duration<double> d;
+        {
+          std::lock_guard<std::mutex> lock3(updateFreqMutex);
+          d = 1000ms / numUpdatesPerSec;
+        }
+        std::this_thread::sleep_for(d);
+      }
     } else {
       Rarr[i].selected = true;
       arr[k] = Rarr[j];
       j++;
-      sleepFunc();
+
+      if (f.wait_for(1ms) != std::future_status::timeout) {
+        return;
+      } else {
+        std::chrono::duration<double> d;
+        {
+          std::lock_guard<std::mutex> lock3(updateFreqMutex);
+          d = 1000ms / numUpdatesPerSec;
+        }
+        std::this_thread::sleep_for(d);
+      }
     }
     k++;
   }
@@ -153,16 +203,16 @@ void merge(SortableRenderData* arr, int l, int m, int r, std::function<void()>&&
 }
 
 // l is for left index and r is right index of the sub-array of arr to be sorted
-void mergeSort(SortableRenderData* arr, int l, int r, std::function<void()>&& sleepFunc)
+void mergeSort(SortableRenderData* arr, int l, int r, std::future<void>& f)
 {
   if (l >= r) {
     return; // returns recursively
   }
   int m = l + (r - l) / 2;
   // Sorts the first and second arrays then merges them
-  mergeSort(arr, l, m, std::move(sleepFunc));
-  mergeSort(arr, m + 1, r, std::move(sleepFunc));
-  merge(arr, l, m, r, std::move(sleepFunc));
+  mergeSort(arr, l, m, f);
+  mergeSort(arr, m + 1, r, f);
+  merge(arr, l, m, r, f);
 }
 
 //////// Quick Sort
@@ -177,12 +227,17 @@ void mergeSort(SortableRenderData* arr, int l, int r, std::function<void()>&& sl
 - If left >= right, the point where they met is the new pivot
 */
 // Partition function to split array based on values at high as pivot value
-int Partition(SortableRenderData* arr, int low, int high, std::function<void()>&& /*sleepFunc*/)
+int Partition(SortableRenderData* arr, int low, int high, std::future<void>& f, bool& pShouldExit)
 {
   int pivot, index, i;
   index = low;
   pivot = high;
   for (i = low; i < high; i++) {
+    if (f.wait_for(1ms) != std::future_status::timeout) {
+      pShouldExit = true;
+      return -1;
+    }
+
     // Find the index of the pivot
     if (arr[i] < arr[pivot]) {
       swap(&arr[i], &arr[index]);
@@ -193,24 +248,35 @@ int Partition(SortableRenderData* arr, int low, int high, std::function<void()>&
   return index;
 }
 // Randomly selecting our pivot
-int RandomPivotSelection(SortableRenderData* arr, int low, int high, std::function<void()>&& sleepFunc)
+int RandomPivotSelection(SortableRenderData* arr, int low, int high, std::future<void>& f, bool& pShouldExit)
 {
   int pivot, n;
   n = rand();
   // Randomizing pivot value from the sub-array
   pivot = low + n % (high - low + 1);
   swap(&arr[high], &arr[pivot]);
-  return Partition(arr, low, high, std::move(sleepFunc));
+
+  bool shouldExit = false;
+  int ret = Partition(arr, low, high, f, shouldExit);
+  if (shouldExit) {
+    pShouldExit = true;
+    return -1;
+  }
+  return ret;
 }
-void quickSort(SortableRenderData* arr, int p, int q, std::function<void()>&& sleepFunc)
+void quickSort(SortableRenderData* arr, int p, int q, std::future<void>& f)
 {
   // Recursively sorting list
   int pindex;
   if (p < q) {
-    pindex = RandomPivotSelection(arr, p, q, std::move(sleepFunc));
+    bool shouldExit = false;
+    pindex = RandomPivotSelection(arr, p, q, f, shouldExit);
+    if (shouldExit) {
+      return;
+    }
     // Recursive QuickSort
-    quickSort(arr, p, pindex - 1, std::move(sleepFunc));
-    quickSort(arr, pindex + 1, q, std::move(sleepFunc));
+    quickSort(arr, p, pindex - 1, f);
+    quickSort(arr, pindex + 1, q, f);
   }
 }
 
@@ -220,18 +286,18 @@ void quickSort(SortableRenderData* arr, int p, int q, std::function<void()>&& sl
 
 //////// Binary Insertion Sort
 
-void Sort(SortableRenderData* array, int32_t size, SortType type, std::function<void()>&& sleepFunc)
+void Sort(SortableRenderData* array, int32_t size, SortType type, std::future<void>& f)
 {
   if (type == SortType::SELECTION) {
-    selectionSort(array, int32_t(size), std::move(sleepFunc));
+    selectionSort(array, int32_t(size), f);
   } else if (type == SortType::BUBBLE) {
-    bubbleSort(array, int32_t(size), std::move(sleepFunc));
+    bubbleSort(array, int32_t(size), f);
   } else if (type == SortType::INSERTION) {
-    insertionSort(array, int32_t(size), std::move(sleepFunc));
+    insertionSort(array, int32_t(size), f);
   } else if (type == SortType::MERGE) {
-    mergeSort(array, 0, int32_t(size) - 1, std::move(sleepFunc));
+    mergeSort(array, 0, int32_t(size) - 1, f);
   } else if (type == SortType::QUICK) {
-    quickSort(array, 0, int32_t(size) - 1, std::move(sleepFunc));
+    quickSort(array, 0, int32_t(size) - 1, f);
   }
 }
 
