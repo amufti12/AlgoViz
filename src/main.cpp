@@ -203,14 +203,14 @@ int main(int argc, char** argv)
         glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
         if (srd.selected) {
-          array[i].selected = false;
+
           glUniform3f(
             glGetUniformLocation(program, "color"), selectedColor.r, selectedColor.g, selectedColor.b);
         } else if (srd.high) {
-          array[i].high = false;
+
           glUniform3f(glGetUniformLocation(program, "color"), highColor.r, highColor.g, highColor.b);
         } else if (srd.low) {
-          array[i].high = false;
+
           glUniform3f(glGetUniformLocation(program, "color"), lowColor.r, lowColor.g, lowColor.b);
         } else {
           glUniform3f(glGetUniformLocation(program, "color"), defaultColor.r, defaultColor.g, defaultColor.b);

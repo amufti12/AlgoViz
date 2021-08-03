@@ -22,6 +22,17 @@ void swap(SortableRenderData* a, SortableRenderData* b)
   *a = *b;
   *b = temp;
 }
+
+// loops over sortable render data and declares them false
+void resetColorData(SortableRenderData* arr, int size)
+{
+  for (int i = 0; i < size - 1; i++) {
+    arr[i].high = false;
+    arr[i].low = false;
+    arr[i].selected = false;
+  }
+}
+
 //////// Selection Sort - find minimum element in arr and place at beginning
 // Time comp: O(n^2), Space Comp: O(1)
 void selectionSort(SortableRenderData* arr, int size, std::future<void>& f)
@@ -50,6 +61,10 @@ void selectionSort(SortableRenderData* arr, int size, std::future<void>& f)
         d = 1000ms / numUpdatesPerSec;
       }
       std::this_thread::sleep_for(d);
+      {
+        std::lock_guard<std::mutex> lock(sortMutex);
+        resetColorData(arr, dataSize);
+      }
     }
   }
 }
@@ -74,6 +89,10 @@ void bubbleSort(SortableRenderData* arr, int size, std::future<void>& f)
             d = 1000ms / numUpdatesPerSec;
           }
           std::this_thread::sleep_for(d);
+          {
+            std::lock_guard<std::mutex> lock(sortMutex);
+            resetColorData(arr, dataSize);
+          }
         }
       }
     }
@@ -111,6 +130,10 @@ void insertionSort(SortableRenderData* arr, int size, std::future<void>& f)
           d = 1000ms / numUpdatesPerSec;
         }
         std::this_thread::sleep_for(d);
+        {
+          std::lock_guard<std::mutex> lock(sortMutex);
+          resetColorData(arr, dataSize);
+        }
       }
     }
     // inserting it in the right place
@@ -164,6 +187,10 @@ void merge(SortableRenderData* arr, int l, int m, int r, std::future<void>& f)
           d = 1000ms / numUpdatesPerSec;
         }
         std::this_thread::sleep_for(d);
+        {
+          std::lock_guard<std::mutex> lock(sortMutex);
+          resetColorData(arr, dataSize);
+        }
       }
     } else {
       Rarr[i].selected = true;
@@ -179,6 +206,10 @@ void merge(SortableRenderData* arr, int l, int m, int r, std::future<void>& f)
           d = 1000ms / numUpdatesPerSec;
         }
         std::this_thread::sleep_for(d);
+        {
+          std::lock_guard<std::mutex> lock(sortMutex);
+          resetColorData(arr, dataSize);
+        }
       }
     }
     k++;
@@ -241,12 +272,11 @@ int Partition(SortableRenderData* arr, int low, int high, std::future<void>& f, 
     }
 
     // Find the index of the pivot
-    // Show the low value
+    // Show the pivot and high index values
     // -------------------------------------------------------------------------------------
-    // arr[i].low = true;
-    // arr[i].low = false;
     arr[pivot].selected = true;
     arr[index].high = true;
+    arr[low].low = true;
 
     if (arr[i] < arr[pivot]) {
       swap(&arr[i], &arr[index]);
@@ -262,6 +292,10 @@ int Partition(SortableRenderData* arr, int low, int high, std::future<void>& f, 
         d = 1000ms / numUpdatesPerSec;
       }
       std::this_thread::sleep_for(d);
+      {
+        std::lock_guard<std::mutex> lock(sortMutex);
+        resetColorData(arr, dataSize);
+      }
     }
   }
 
@@ -277,7 +311,7 @@ int RandomPivotSelection(SortableRenderData* arr, int low, int high, std::future
   pivot = low + n % (high - low + 1);
 
   swap(&arr[high], &arr[pivot]);
-  // arr[pivot].selected = true;
+
   bool shouldExit = false;
   int ret = Partition(arr, low, high, f, shouldExit);
   if (shouldExit) {
@@ -293,8 +327,6 @@ void quickSort(SortableRenderData* arr, int p, int q, std::future<void>& f)
   if (p < q) {
     bool shouldExit = false;
     pindex = RandomPivotSelection(arr, p, q, f, shouldExit);
-
-    // arr[q].high = true;
 
     if (shouldExit) {
       return;
