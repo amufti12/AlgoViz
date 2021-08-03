@@ -154,7 +154,7 @@ int main(int argc, char** argv)
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
   // Creating random array (NUMBER OF ELEMENTS HERE)
-  std::vector<SortableRenderData> array(100);
+  std::vector<SortableRenderData> array(dataSize);
   // SortableRenderData array[100];
   GetArray(array.data(), static_cast<int32_t>(array.size()));
 
@@ -165,7 +165,8 @@ int main(int argc, char** argv)
 
   glm::vec3 defaultColor(1.0f, 1.0f, 1.0f);
   glm::vec3 selectedColor(1.0f, 0.0f, 0.0f);
-  // glm::vec3 pivotColor(0.0f, 1.0f, 0.0f);
+  glm::vec3 highColor(0.709f, 0.341f, 0.925f);
+  glm::vec3 lowColor(0.266f, 0.921f, 0.592f);
 
   //// IMGUI SECTION
   IMGUI_CHECKVERSION();
@@ -205,17 +206,15 @@ int main(int argc, char** argv)
           array[i].selected = false;
           glUniform3f(
             glGetUniformLocation(program, "color"), selectedColor.r, selectedColor.g, selectedColor.b);
+        } else if (srd.high) {
+          array[i].high = false;
+          glUniform3f(glGetUniformLocation(program, "color"), highColor.r, highColor.g, highColor.b);
+        } else if (srd.low) {
+          array[i].high = false;
+          glUniform3f(glGetUniformLocation(program, "color"), lowColor.r, lowColor.g, lowColor.b);
         } else {
           glUniform3f(glGetUniformLocation(program, "color"), defaultColor.r, defaultColor.g, defaultColor.b);
         }
-
-        // if (srd.pivot) {
-        //   array[i].pivot = false;
-        //   glUniform3f(glGetUniformLocation(program, "color"), pivotColor.r, pivotColor.g, pivotColor.b);
-        // } else {
-        //   glUniform3f(glGetUniformLocation(program, "color"), defaultColor.r, defaultColor.g,
-        //   defaultColor.b);
-        // }
 
         glBindVertexArray(rect.vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -237,6 +236,7 @@ int main(int argc, char** argv)
       ImGui::Begin("Test Window");
       ImGui::Text("This is some text");
       ImGui::DragInt("Updates Per Second", &numUpdatesPerSec, 1.0f, 1, 100);
+      ImGui::DragInt("Number of Elements", &dataSize, 1.0f, 10, 10000);
       const char* items[] = { "Selection", "Bubble", "Insertion", "Merge", "Quick" };
       ImGui::Combo("Available Sorts", &item_current, items, IM_ARRAYSIZE(items));
       clicked = ImGui::Button("Start");
@@ -254,6 +254,10 @@ int main(int argc, char** argv)
         // Stop the thread
         launch_thread.join();
       }
+
+      // Reading dataSize when clicked
+      array = std::vector<SortableRenderData>(dataSize);
+      diff = 1280.0f / array.size();
 
       // Regenerate the data to sort for next sort
       GetArray(array.data(), static_cast<int32_t>(array.size()));

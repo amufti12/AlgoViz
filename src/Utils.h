@@ -11,6 +11,7 @@ using namespace std::chrono_literals;
 std::mutex sortMutex;
 std::mutex updateFreqMutex;
 int numUpdatesPerSec = 1;
+int dataSize = 100;
 
 struct VisualizationRectangle
 {
@@ -81,7 +82,9 @@ public:
 
   bool selected;
 
-  // bool pivot;
+  bool high;
+
+  bool low;
 };
 
 std::ostream& operator<<(std::ostream& os, const SortableRenderData& srd)
