@@ -29,7 +29,7 @@ add_executable(${_project_name} ${_AlgoViz_srcs} ${_AlgoViz_extra_src_files} ${_
 
 set(_AlgoViz_compile_flags
   $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-  -Werror -Wall -Wextra>
+  -Wall -Wextra>
   $<$<CXX_COMPILER_ID:MSVC>:
   /WX /W4>)
 

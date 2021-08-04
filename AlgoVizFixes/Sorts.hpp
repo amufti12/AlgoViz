@@ -279,118 +279,29 @@ void mergeSort(std::vector<SortableRenderData>& arr, int l, int r, std::shared_f
 - If left >= right, the point where they met is the new pivot
 */
 // Partition function to split array based on values at high as pivot value
-// int Partition(SortableRenderData* arr, int low, int high, std::future<void>& f, bool& pShouldExit)
-// {
-//   int pivot, index, i;
-//   index = low;
-//   pivot = high;
-
-//   for (i = low; i < high; i++) {
-//     if (f.wait_for(1ms) != std::future_status::timeout) {
-//       pShouldExit = true;
-//       return -1;
-//     }
-
-//     // Find the index of the pivot
-//     // Show the pivot and high index values
-//     // -------------------------------------------------------------------------------------
-//     {
-//       if (arr[i] < arr[pivot]) {
-//         swap(&arr[i], &arr[index]);
-//         index++;
-//       }
-//     }
-//     if (f.wait_for(1ms) != std::future_status::timeout) {
-//       pShouldExit = true;
-//       return -1;
-//     } else {
-//       std::chrono::duration<double> d;
-//       {
-//         std::lock_guard<std::mutex> lock3(updateFreqMutex);
-//         d = 1000ms / numUpdatesPerSec;
-//       }
-//       std::this_thread::sleep_for(d);
-//       {
-//         std::lock_guard<std::mutex> lock(sortMutex);
-//         resetColorData(arr, dataSize);
-//       }
-//     }
-//     {
-//       std::lock_guard<std::mutex> lock(sortMutex);
-//       arr[pivot].selected = true;
-//       arr[index].high = true;
-//       arr[low].low = true;
-//     }
-//   }
-
-//   {
-//     std::lock_guard<std::mutex> lock(sortMutex);
-//     swap(&arr[pivot], &arr[index]);
-//     return index;
-//   }
-// }
-
-// // Randomly selecting our pivot
-// int RandomPivotSelection(SortableRenderData* arr, int low, int high, std::future<void>& f, bool&
-// pShouldExit)
-// {
-//   int pivot, n;
-//   n = rand();
-//   // Randomizing pivot value from the sub-array
-//   pivot = low + n % (high - low + 1);
-
-//   {
-//     std::lock_guard<std::mutex> lock(sortMutex);
-//     swap(&arr[high], &arr[pivot]);
-//   }
-
-//   bool shouldExit = false;
-//   int ret = Partition(arr, low, high, f, shouldExit);
-//   if (shouldExit) {
-//     pShouldExit = true;
-//     return -1;
-//   }
-//   return ret;
-// }
-// void quickSort(SortableRenderData* arr, int p, int q, std::future<void>& f)
-// {
-//   // Recursively sorting list
-//   int pindex;
-//   if (p < q) {
-//     bool shouldExit = false;
-//     pindex = RandomPivotSelection(arr, p, q, f, shouldExit);
-
-//     if (shouldExit) {
-//       return;
-//     }
-//     // Recursive QuickSort
-//     quickSort(arr, p, pindex - 1, f);
-//     quickSort(arr, pindex + 1, q, f);
-//   }
-// }
-
 int Partition(std::vector<SortableRenderData>& arr,
               int low,
               int high,
               std::shared_future<void>& f,
               bool& pShouldExit)
 {
-  int pivot;
-  int i = (low - 1);
+  int pivot, index, i;
+  index = low;
   pivot = high;
 
-  for (int j = low; j <= high - 1; j++) {
+  // Show the high value -------------------------------------------------------------------------------------
+  for (i = low; i < high; i++) {
     if (f.wait_for(1ms) != std::future_status::timeout) {
       pShouldExit = true;
       return -1;
     }
 
-    {
-      if (arr[j] < arr[pivot]) {
-        i++;
-        std::lock_guard<std::mutex> lock(sortMutex);
-        swap(&arr[i], &arr[j]);
-      }
+    // Find the index of the pivot
+    // Show the pivot and high index values
+    // -------------------------------------------------------------------------------------
+    if (arr[i] < arr[pivot]) {
+      swap(&arr[i], &arr[index]);
+      index++;
     }
 
     if (f.wait_for(1ms) != std::future_status::timeout) {
@@ -409,18 +320,43 @@ int Partition(std::vector<SortableRenderData>& arr,
       }
     }
 
-    {
-      std::lock_guard<std::mutex> lock(sortMutex);
-      arr[pivot].selected = true;
-      arr[j].high = true;
-      arr[low].low = true;
-    }
+    std::lock_guard<std::mutex> lock(sortMutex);
+    arr[pivot].selected = true;
+    arr[index].high = true;
+    arr[low].low = true;
   }
+
   {
     std::lock_guard<std::mutex> lock(sortMutex);
-    swap(&arr[i + 1], &arr[high]);
-    return (i + 1);
+    swap(&arr[pivot], &arr[index]);
+    return index;
   }
+}
+
+// Randomly selecting our pivot
+int RandomPivotSelection(std::vector<SortableRenderData>& arr,
+                         int low,
+                         int high,
+                         std::shared_future<void>& f,
+                         bool& pShouldExit)
+{
+  int pivot, n;
+  n = rand();
+  // Randomizing pivot value from the sub-array
+  pivot = low + n % (high - low + 1);
+
+  {
+    std::lock_guard<std::mutex> lock(sortMutex);
+    swap(&arr[high], &arr[pivot]);
+  }
+
+  bool shouldExit = false;
+  int ret = Partition(arr, low, high, f, shouldExit);
+  if (shouldExit) {
+    pShouldExit = true;
+    return -1;
+  }
+  return ret;
 }
 void quickSort(std::vector<SortableRenderData>& arr, int low, int high, std::shared_future<void>& f)
 {
@@ -428,7 +364,8 @@ void quickSort(std::vector<SortableRenderData>& arr, int low, int high, std::sha
   int pindex;
   if (low < high) {
     bool shouldExit = false;
-    pindex = Partition(arr, low, high, f, shouldExit);
+    pindex = RandomPivotSelection(arr, p, q, f, shouldExit);
+
     if (shouldExit) {
       return;
     }
@@ -461,12 +398,6 @@ void Sort(std::vector<SortableRenderData>& array, SortType type, std::shared_fut
     mergeSort(array, 0, int32_t(array.size()) - 1, f);
   } else if (type == SortType::QUICK) {
     quickSort(array, 0, int32_t(array.size()) - 1, f);
-  }
-
-  for (auto& srd : array) {
-    srd.high = false;
-    srd.low = false;
-    srd.selected = false;
   }
 }
 
