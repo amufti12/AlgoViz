@@ -165,10 +165,13 @@ int main(int argc, char** argv)
 
   // Creating random array (NUMBER OF ELEMENTS HERE)
   std::vector<SortableRenderData> array(dataSize);
-  // SortableRenderData array[100];
   GetArray(array);
 
+  // # # # # # # # # # #
+
   glm::vec2 position(0.0f, 0.0f);
+  float paddingInPixels = 2.0f;
+  float totalPaddingInPixels = paddingInPixels * (array.size() - 1);
   float diff = 1280.0f / array.size();
 
   static VisualizationRectangle rect;
@@ -209,7 +212,11 @@ int main(int argc, char** argv)
         glm::mat4 projection = glm::ortho(0.0f, 1280.0f, 720.0f, 0.0f);
         glm::mat4 model = glm::mat4(1);
         model = glm::translate(model, glm::vec3(position.x, 720.0f - (srd.data * 720.0f), 0.0f));
-        model = glm::scale(model, glm::vec3(1280.0f / array.size(), srd.data * 720.0f, 1.0f));
+
+        // Intentionally oversizing the last one, you can't see it though :)
+        float xScale =
+          i != array.size() - 1 ? (1280.0f - totalPaddingInPixels) / array.size() : (1280.0f / array.size());
+        model = glm::scale(model, glm::vec3(xScale, srd.data * 720.0f, 1.0f));
 
         glUseProgram(program);
         glUniformMatrix4fv(
@@ -233,6 +240,7 @@ int main(int argc, char** argv)
         glBindVertexArray(rect.vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+
         position.x += diff;
       }
 
