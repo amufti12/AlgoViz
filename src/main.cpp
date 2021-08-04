@@ -2,6 +2,7 @@
 #include <chrono>
 #include <future>
 #include <iostream>
+#include <random>
 #include <thread> // Allows us the creates new threads
 
 #include <imgui.h>
@@ -28,12 +29,23 @@
 
 using namespace std::chrono_literals;
 
-//
-void GetArray(SortableRenderData* array, int size)
+// Shuffles a random array of numbers from 0 to 1 using mersenne twister engine generator
+void GetArray(std::vector<SortableRenderData>& array)
 {
-  for (int i = 0; i < size; i++) {
-    array[i].data = rand() / float(RAND_MAX);
+  array[0].data = 0.0f;
+  array[array.size() - 1].data = 1.0f;
+
+  // Difference
+  float diff = 1.0f / static_cast<float>(array.size());
+  float currentValue = diff;
+  for (size_t i = 1; i < array.size() - 1; i++) {
+    array[i].data = currentValue;
+    currentValue += diff;
   }
+
+  std::random_device rd;
+  std::mt19937 g(rd());
+  std::shuffle(array.begin(), array.end(), g);
 }
 
 int main(int argc, char** argv)
@@ -154,7 +166,7 @@ int main(int argc, char** argv)
   // Creating random array (NUMBER OF ELEMENTS HERE)
   std::vector<SortableRenderData> array(dataSize);
   // SortableRenderData array[100];
-  GetArray(array.data(), static_cast<int32_t>(array.size()));
+  GetArray(array);
 
   glm::vec2 position(0.0f, 0.0f);
   float diff = 1280.0f / array.size();
@@ -267,7 +279,7 @@ int main(int argc, char** argv)
         diff = 1280.0f / array.size();
 
         // Regenerate the data to sort for next sort
-        GetArray(array.data(), static_cast<int32_t>(array.size()));
+        GetArray(array);
       }
 
       // Reset promise and future and launch thread for sorting again
