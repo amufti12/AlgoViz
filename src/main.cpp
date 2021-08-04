@@ -262,7 +262,7 @@ int main(int argc, char** argv)
       }
 
       // Reset data in the right situation
-      if (resetClicked || (startClicked && was_running)) {
+      if (resetClicked || (startClicked && was_running) || (startClicked && array.size() != dataSize)) {
         array = std::vector<SortableRenderData>(dataSize);
         diff = 1280.0f / array.size();
 

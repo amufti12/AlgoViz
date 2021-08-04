@@ -422,6 +422,7 @@ int Partition(std::vector<SortableRenderData>& arr,
     return (i + 1);
   }
 }
+
 void quickSort(std::vector<SortableRenderData>& arr, int low, int high, std::shared_future<void>& f)
 {
   // Recursively sorting list
@@ -446,11 +447,6 @@ void quickSort(std::vector<SortableRenderData>& arr, int low, int high, std::sha
 
 void Sort(std::vector<SortableRenderData>& array, SortType type, std::shared_future<void>& f)
 {
-  {
-    std::lock_guard<std::mutex> lock(dataSizeMutex);
-    activeDataSize = static_cast<int32_t>(array.size());
-  }
-
   if (type == SortType::SELECTION) {
     selectionSort(array, int32_t(array.size()), f);
   } else if (type == SortType::BUBBLE) {
