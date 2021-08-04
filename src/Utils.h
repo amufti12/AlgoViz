@@ -10,8 +10,10 @@ using namespace std::chrono_literals;
 
 std::mutex sortMutex;
 std::mutex updateFreqMutex;
+std::mutex dataSizeMutex;
 int numUpdatesPerSec = 1;
 int dataSize = 100;
+int activeDataSize = 100;
 
 struct VisualizationRectangle
 {

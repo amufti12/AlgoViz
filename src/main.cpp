@@ -15,6 +15,7 @@
 #include <glad/glad.h>
 
 #include <GLFW/glfw3.h>
+
 #pragma warning(push)
 #pragma warning(disable : 4201)
 #include <glm/glm.hpp>
@@ -190,7 +191,7 @@ int main(int argc, char** argv)
 
     {
       std::lock_guard<std::mutex> lock(sortMutex);
-      for (int i = 0; i < array.size(); i++) {
+      for (unsigned int i = 0; i < array.size(); i++) {
         SortableRenderData srd = array[i];
         glm::mat4 projection = glm::ortho(0.0f, 1280.0f, 720.0f, 0.0f);
         glm::mat4 model = glm::mat4(1);
@@ -235,7 +236,10 @@ int main(int argc, char** argv)
     {
       ImGui::Begin("Test Window");
       ImGui::Text("This is some text");
-      ImGui::DragInt("Updates Per Second", &numUpdatesPerSec, 1.0f, 1, 100);
+      {
+        std::lock_guard<std::mutex> lock(updateFreqMutex);
+        ImGui::DragInt("Updates Per Second", &numUpdatesPerSec, 1.0f, 1, 100);
+      }
       ImGui::DragInt("Number of Elements", &dataSize, 1.0f, 10, 10000);
       const char* items[] = { "Selection", "Bubble", "Insertion", "Merge", "Quick" };
       ImGui::Combo("Available Sorts", &item_current, items, IM_ARRAYSIZE(items));
@@ -276,8 +280,9 @@ int main(int argc, char** argv)
 
   // Terminate all for shutdown section
   p.set_value();
-  launch_thread.join();
-
+  if (launch_thread.joinable()) {
+    launch_thread.join();
+  }
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
