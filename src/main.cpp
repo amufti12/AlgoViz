@@ -29,6 +29,35 @@
 
 using namespace std::chrono_literals;
 
+SortType sortTypeComboList[] = { SortType::SELECTION,
+                                 SortType::BUBBLE,
+                                 SortType::INSERTION,
+                                 SortType::MERGE,
+                                 SortType::QUICK };
+
+int32_t dataSize = 100;
+
+// Function Prototype
+void Render(std::vector<SortableRenderData>& array,
+            uint32_t width,
+            uint32_t height,
+            glm::vec2 position,
+            uint32_t program,
+            float totalPaddingInPixels,
+            glm::vec3 selectedColor,
+            glm::vec3 highColor,
+            glm::vec3 lowColor,
+            glm::vec3 defaultColor,
+            VisualizationRectangle rect,
+            float diff,
+            float deltaTime,
+            int& item_current,
+            bool& startClicked,
+            bool& resetClicked,
+            std::shared_future<void>& async_future,
+            std::shared_future<void>& promise_f,
+            std::promise<void>& p);
+
 // Shuffles a random array of numbers from 0 to 1 using mersenne twister engine generator
 void GetArray(std::vector<SortableRenderData>& array)
 {
@@ -60,10 +89,6 @@ int main(int argc, char** argv)
 
   Logger::Init();
   Logger::SetLogLevel(Logger::LogLevel::INFO);
-
-  SortType sortTypeComboList[] = {
-    SortType::SELECTION, SortType::BUBBLE, SortType::INSERTION, SortType::MERGE, SortType::QUICK
-  };
 
   ////////////////////////////////////////////////////////
   // CREATING GLFW WINDOW SECTION
@@ -172,7 +197,7 @@ int main(int argc, char** argv)
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
   // Creating random array (NUMBER OF ELEMENTS HERE)
-  int32_t dataSize = 100;
+
   std::vector<SortableRenderData> array(dataSize);
   GetArray(array);
 
@@ -200,11 +225,12 @@ int main(int argc, char** argv)
   ImGui_ImplOpenGL3_Init("#version 410");
 
   std::promise<void> p;
-  std::shared_future<void> promise_f = p.get_future();
-  std::future<void> async_future;
+  std::shared_future<void> promise_f = p.get_future().share();
+  std::shared_future<void> async_future;
 
   float deltaTime = 0.0f;
   float lastTime = 0.0f;
+  int item_current = 0;
 
   while (!glfwWindowShouldClose(window)) {
     // Calculating time to render one frame
@@ -214,7 +240,6 @@ int main(int argc, char** argv)
 
     bool startClicked = false;
     bool resetClicked = false;
-    static int item_current = 0;
 
     // Get user input
     glfwPollEvents();
@@ -222,102 +247,25 @@ int main(int argc, char** argv)
     // Render
     glClear(GL_COLOR_BUFFER_BIT);
 
-    {
-      std::lock_guard<std::mutex> sortLock(sortMutex);
-      for (unsigned int i = 0; i < array.size(); i++) {
-        SortableRenderData srd = array[i];
-        glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f);
-        glm::mat4 model = glm::mat4(1);
-        model = glm::translate(
-          model,
-          glm::vec3(position.x, static_cast<float>(height) - (srd.data * static_cast<float>(height)), 0.0f));
-
-        // Intentionally oversizing the last one, you can't see it though :)
-        float xScale = i != array.size() - 1
-                         ? (static_cast<float>(width) - totalPaddingInPixels) / array.size()
-                         : (static_cast<float>(width) / array.size());
-        model = glm::scale(model, glm::vec3(xScale, srd.data * static_cast<float>(height), 1.0f));
-
-        glUseProgram(program);
-        glUniformMatrix4fv(
-          glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-        glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-        if (srd.selected) {
-
-          glUniform3f(
-            glGetUniformLocation(program, "color"), selectedColor.r, selectedColor.g, selectedColor.b);
-        } else if (srd.high) {
-
-          glUniform3f(glGetUniformLocation(program, "color"), highColor.r, highColor.g, highColor.b);
-        } else if (srd.low) {
-
-          glUniform3f(glGetUniformLocation(program, "color"), lowColor.r, lowColor.g, lowColor.b);
-        } else {
-          glUniform3f(glGetUniformLocation(program, "color"), defaultColor.r, defaultColor.g, defaultColor.b);
-        }
-
-        glBindVertexArray(rect.vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-
-        position.x += diff;
-      }
-
-      position = glm::vec3(0.0f, 0.0f, 0.0f);
-
-      // Displaying the UI Window
-      ImGui_ImplOpenGL3_NewFrame();
-      ImGui_ImplGlfw_NewFrame();
-      ImGui::NewFrame();
-      {
-        ImGui::Begin("AlgoViz");
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", deltaTime, ImGui::GetIO().Framerate);
-        {
-          std::lock_guard<std::mutex> freqLock(updateFreqMutex);
-          ImGui::DragInt("Updates Per Second", &numUpdatesPerSec, 1.0f, 1, 100);
-        }
-        const char* items[] = { "Selection", "Bubble", "Insertion", "Merge", "Quick" };
-        ImGui::Combo("Available Sorts", &item_current, items, IM_ARRAYSIZE(items));
-        startClicked = ImGui::Button("Start");
-        ImGui::SameLine();
-        resetClicked = ImGui::Button("Reset");
-        ImGui::End();
-      }
-      ImGui::Render();
-      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    }
-
-    if (startClicked || resetClicked) {
-      // Signal sort thread to stop
-      p.set_value();
-
-      // Wait...
-      bool was_running = false;
-      if (async_future.valid()) {
-        was_running = true;
-        async_future.wait();
-        async_future.get();
-      }
-
-      // Reset data in the right situation
-      if (resetClicked || (startClicked && was_running) || (startClicked && array.size() != dataSize)) {
-        array = std::vector<SortableRenderData>(dataSize);
-        diff = static_cast<float>(width) / array.size();
-
-        // Regenerate the data to sort for next sort
-        GetArray(array);
-      }
-
-      // Reset promise and future and launch thread for sorting again
-      p = std::promise<void>();
-      promise_f = p.get_future();
-      if (startClicked) {
-        async_future = std::async(std::launch::async, [&array, sortTypeComboList, &promise_f]() {
-          Sort(array, sortTypeComboList[item_current], promise_f);
-        });
-      }
-    }
+    Render(array,
+           width,
+           height,
+           position,
+           program,
+           totalPaddingInPixels,
+           selectedColor,
+           highColor,
+           lowColor,
+           defaultColor,
+           rect,
+           diff,
+           deltaTime,
+           item_current,
+           startClicked,
+           resetClicked,
+           async_future,
+           promise_f,
+           p);
     // Put the render on the screen
     glfwSwapBuffers(window);
   }
@@ -333,4 +281,116 @@ int main(int argc, char** argv)
   ImGui::DestroyContext();
 
   glfwTerminate();
+}
+
+void Render(std::vector<SortableRenderData>& array,
+            uint32_t width,
+            uint32_t height,
+            glm::vec2 position,
+            uint32_t program,
+            float totalPaddingInPixels,
+            glm::vec3 selectedColor,
+            glm::vec3 highColor,
+            glm::vec3 lowColor,
+            glm::vec3 defaultColor,
+            VisualizationRectangle rect,
+            float diff,
+            float deltaTime,
+            int& item_current,
+            bool& startClicked,
+            bool& resetClicked,
+            std::shared_future<void>& async_future,
+            std::shared_future<void>& promise_f,
+            std::promise<void>& p)
+{
+  LOG_INFO("TOP OF RENDER");
+  for (unsigned int i = 0; i < array.size(); i++) {
+    SortableRenderData srd = array[i];
+    glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f);
+    glm::mat4 model = glm::mat4(1);
+    model = glm::translate(
+      model,
+      glm::vec3(position.x, static_cast<float>(height) - (srd.data * static_cast<float>(height)), 0.0f));
+
+    // Intentionally oversizing the last one, you can't see it though :)
+    float xScale = i != array.size() - 1 ? (static_cast<float>(width) - totalPaddingInPixels) / array.size()
+                                         : (static_cast<float>(width) / array.size());
+    model = glm::scale(model, glm::vec3(xScale, srd.data * static_cast<float>(height), 1.0f));
+
+    glUseProgram(program);
+    glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(glGetUniformLocation(program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+    if (srd.selected) {
+
+      glUniform3f(glGetUniformLocation(program, "color"), selectedColor.r, selectedColor.g, selectedColor.b);
+    } else if (srd.high) {
+
+      glUniform3f(glGetUniformLocation(program, "color"), highColor.r, highColor.g, highColor.b);
+    } else if (srd.low) {
+
+      glUniform3f(glGetUniformLocation(program, "color"), lowColor.r, lowColor.g, lowColor.b);
+    } else {
+      glUniform3f(glGetUniformLocation(program, "color"), defaultColor.r, defaultColor.g, defaultColor.b);
+    }
+
+    glBindVertexArray(rect.vao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+
+    position.x += diff;
+  }
+  position = glm::vec2(0.0f, 0.0f);
+
+  // Displaying the UI Window
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+  {
+    ImGui::Begin("AlgoViz");
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", deltaTime, ImGui::GetIO().Framerate);
+
+    ImGui::DragInt("Updates Per Second", &numUpdatesPerSec, 1.0f, 1, 100);
+
+    const char* items[] = { "Selection", "Bubble", "Insertion", "Merge", "Quick" };
+    ImGui::Combo("Available Sorts", &item_current, items, IM_ARRAYSIZE(items));
+    startClicked = ImGui::Button("Start");
+    ImGui::SameLine();
+    resetClicked = ImGui::Button("Reset");
+    ImGui::End();
+  }
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+  if (startClicked || resetClicked) {
+    // Signal sort thread to stop
+    p.set_value();
+
+    // Wait...
+    bool was_running = false;
+    if (async_future.valid()) {
+      was_running = true;
+      async_future.wait();
+      async_future.get();
+    }
+
+    // Reset data in the right situation
+    if (resetClicked || (startClicked && was_running) || (startClicked && array.size() != dataSize)) {
+      array = std::vector<SortableRenderData>(dataSize);
+      diff = static_cast<float>(width) / array.size();
+
+      // Regenerate the data to sort for next sort
+      GetArray(array);
+    }
+
+    // Reset promise and future and launch thread for sorting again
+    p = std::promise<void>();
+    promise_f = p.get_future().share();
+    if (startClicked) {
+      async_future = std::async(std::launch::async, [&array, item_current, &promise_f]() {
+                       Sort(array, sortTypeComboList[item_current], promise_f);
+                     }).share();
+      LOG_INFO("HERE");
+    }
+  }
 }
