@@ -78,6 +78,7 @@ int main(int argc, char** argv)
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE); -> needed for mac
   glfwWindowHint(GLFW_RESIZABLE, false);
+  glfwWindowHint(GLFW_SAMPLES, 4); // Anti-aliasing
 
   // glfwcreateWindow(width, height, title, monitor, share)
   GLFWwindow* window = glfwCreateWindow(width, height, "AlgoViz", nullptr, nullptr);
@@ -90,6 +91,8 @@ int main(int argc, char** argv)
     LOG_ERROR("Failed to initialize GLAD");
     std::exit(-1);
   }
+
+  glEnable(GL_MULTISAMPLE); // Turing anti-aliasing on
 
   ////////////////////////////////////////////////////////
   // SHADER SECTION
