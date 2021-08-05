@@ -3,6 +3,7 @@
 
 #include "Utils.h"
 
+#include <algorithm>
 #include <thread>
 
 enum SortType
@@ -49,7 +50,8 @@ void selectionSort(std::vector<SortableRenderData>& arr, int size, std::shared_f
         }
       }
       arr[i].selected = true;
-      swap(&arr[i], &arr[imin]);
+      arr[imin].low = true;
+      std::swap(arr[i], arr[imin]);
     }
 
     if (f.wait_for(1ms) != std::future_status::timeout) {
@@ -79,7 +81,8 @@ void bubbleSort(std::vector<SortableRenderData>& arr, int size, std::shared_futu
         {
           std::lock_guard<std::mutex> lock(sortMutex);
           arr[j].selected = true;
-          swap(&arr[j], &arr[j + 1]);
+          arr[j + 1].low = true;
+          std::swap(arr[j], arr[j + 1]);
           swaps = 1; // setting the swap flag
         }
 
@@ -120,13 +123,16 @@ void insertionSort(std::vector<SortableRenderData>& arr, int size, std::shared_f
     {
       std::lock_guard<std::mutex> lock(sortMutex);
       key = arr[i]; // take value
+      // key.selected = true;
     }
     j = i;
     while (j > 0 && arr[j - 1] > key) {
       {
         std::lock_guard<std::mutex> lock(sortMutex);
+        arr[i].low = true;
         arr[j - 1].selected = true;
-        arr[j] = arr[j - 1];
+        arr[j].selected = true;
+        std::swap(arr[j], arr[j - 1]);
         j--;
       }
 
@@ -148,7 +154,7 @@ void insertionSort(std::vector<SortableRenderData>& arr, int size, std::shared_f
     // inserting it in the right place
     {
       std::lock_guard<std::mutex> lock(sortMutex);
-      arr[j] = key;
+      std::swap(arr[j], key);
     }
   }
 }
@@ -268,26 +274,22 @@ void mergeSort(std::vector<SortableRenderData>& arr, int l, int r, std::shared_f
 }
 
 //////// Quick Sort
-/*
-- Choose the highest index value as pivot val
-- Take two variables to point left and right of the list excluding pivot val
-- Left points to the low index
-- Right points to the  high index
-- While value at left is less than pivot move right
-- While value at right is greater than pivot move left
-- If both set 5 and step 6 does not match swap left and right
-- If left >= right, the point where they met is the new pivot
-*/
-// Partition function to split array based on values at high as pivot value
+// Partition takes last element as pivot, places pivot element at correct position in sorted array, places all
+// elements smaller than pivot to left of pivot and greater than pivot to right of pivot
 int Partition(std::vector<SortableRenderData>& arr,
               int low,
               int high,
               std::shared_future<void>& f,
               bool& pShouldExit)
 {
-  int pivot;
+  // Pivot value
+  SortableRenderData pivotValue;
+  pivotValue = arr[high];
+
+  int pivot = high;
+
+  // Index of smaller element and indicates the right position of pivot is found
   int i = (low - 1);
-  pivot = high;
 
   for (int j = low; j <= high - 1; j++) {
     if (f.wait_for(1ms) != std::future_status::timeout) {
@@ -296,10 +298,16 @@ int Partition(std::vector<SortableRenderData>& arr,
     }
 
     {
-      if (arr[j] < arr[pivot]) {
+      // If current element is smaller than the pivot
+      if (arr[j] < pivotValue) {
+        // Increment the smaller element
         i++;
         std::lock_guard<std::mutex> lock(sortMutex);
-        swap(&arr[i], &arr[j]);
+        // Swap smaller element to left of pivot
+        arr[pivot].selected = true;
+        arr[j].high = true;
+        arr[low].low = true;
+        std::swap(arr[i], arr[j]);
       }
     }
 
@@ -328,22 +336,26 @@ int Partition(std::vector<SortableRenderData>& arr,
   }
   {
     std::lock_guard<std::mutex> lock(sortMutex);
-    swap(&arr[i + 1], &arr[high]);
-    return (i + 1);
+    // swapping greater elements to right of pivot
+    std::swap(arr[i + 1], arr[high]);
   }
+  return (i + 1);
 }
 
+// Implementing quicksort algorithm
 void quickSort(std::vector<SortableRenderData>& arr, int low, int high, std::shared_future<void>& f)
 {
   // Recursively sorting list
   int pindex;
+  // Low is starting index; high is ending index
   if (low < high) {
     bool shouldExit = false;
+    // pindex is partitioning index, arr[pindex] should be in the right place
     pindex = Partition(arr, low, high, f, shouldExit);
     if (shouldExit) {
       return;
     }
-    // Recursive QuickSort
+    // Sort elements before partition and after partition
     quickSort(arr, low, pindex - 1, f);
     quickSort(arr, pindex + 1, high, f);
   }

@@ -53,6 +53,9 @@ int main(int argc, char** argv)
   AV_UNUSED(argc);
   AV_UNUSED(argv);
 
+  uint32_t width = 1280;
+  uint32_t height = 720;
+
   srand(static_cast<uint32_t>(time(NULL)));
 
   Logger::Init();
@@ -65,7 +68,7 @@ int main(int argc, char** argv)
   ////////////////////////////////////////////////////////
   // CREATING GLFW WINDOW SECTION
   if (glfwInit() != GLFW_TRUE) {
-    LOG_ERROR("GLFW failed to initialize {}", 10);
+    LOG_ERROR("GLFW failed to initialize");
     std::exit(-1);
   }
 
@@ -77,8 +80,10 @@ int main(int argc, char** argv)
   glfwWindowHint(GLFW_RESIZABLE, false);
 
   // glfwcreateWindow(width, height, title, monitor, share)
-  GLFWwindow* window = glfwCreateWindow(1280, 720, "AlgoViz", nullptr, nullptr);
+  GLFWwindow* window = glfwCreateWindow(width, height, "AlgoViz", nullptr, nullptr);
   glfwMakeContextCurrent(window);
+  // Disable vsync
+  glfwSwapInterval(0);
 
   // Loading all function pointers for OpenGL
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -159,11 +164,12 @@ int main(int argc, char** argv)
   glDeleteShader(fragmentShader);
   ////////////////////////////////////////////////////////
 
-  glViewport(0, 0, 1280, 720);
+  glViewport(0, 0, width, height);
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
   // Creating random array (NUMBER OF ELEMENTS HERE)
+  int32_t dataSize = 100;
   std::vector<SortableRenderData> array(dataSize);
   GetArray(array);
 
@@ -172,7 +178,7 @@ int main(int argc, char** argv)
   glm::vec2 position(0.0f, 0.0f);
   float paddingInPixels = 2.0f;
   float totalPaddingInPixels = paddingInPixels * (array.size() - 1);
-  float diff = 1280.0f / array.size();
+  float diff = static_cast<float>(width) / array.size();
 
   static VisualizationRectangle rect;
 
@@ -194,7 +200,15 @@ int main(int argc, char** argv)
   std::shared_future<void> promise_f = p.get_future();
   std::future<void> async_future;
 
+  float deltaTime = 0.0f;
+  float lastTime = 0.0f;
+
   while (!glfwWindowShouldClose(window)) {
+    // Calculating time to render one frame
+    float currentTime = static_cast<float>(glfwGetTime());
+    deltaTime = currentTime - lastTime;
+    lastTime = currentTime;
+
     bool startClicked = false;
     bool resetClicked = false;
     static int item_current = 0;
@@ -209,14 +223,17 @@ int main(int argc, char** argv)
       std::lock_guard<std::mutex> sortLock(sortMutex);
       for (unsigned int i = 0; i < array.size(); i++) {
         SortableRenderData srd = array[i];
-        glm::mat4 projection = glm::ortho(0.0f, 1280.0f, 720.0f, 0.0f);
+        glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f);
         glm::mat4 model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(position.x, 720.0f - (srd.data * 720.0f), 0.0f));
+        model = glm::translate(
+          model,
+          glm::vec3(position.x, static_cast<float>(height) - (srd.data * static_cast<float>(height)), 0.0f));
 
         // Intentionally oversizing the last one, you can't see it though :)
-        float xScale =
-          i != array.size() - 1 ? (1280.0f - totalPaddingInPixels) / array.size() : (1280.0f / array.size());
-        model = glm::scale(model, glm::vec3(xScale, srd.data * 720.0f, 1.0f));
+        float xScale = i != array.size() - 1
+                         ? (static_cast<float>(width) - totalPaddingInPixels) / array.size()
+                         : (static_cast<float>(width) / array.size());
+        model = glm::scale(model, glm::vec3(xScale, srd.data * static_cast<float>(height), 1.0f));
 
         glUseProgram(program);
         glUniformMatrix4fv(
@@ -251,13 +268,12 @@ int main(int argc, char** argv)
       ImGui_ImplGlfw_NewFrame();
       ImGui::NewFrame();
       {
-        ImGui::Begin("Test Window");
-        ImGui::Text("This is some text");
+        ImGui::Begin("AlgoViz");
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", deltaTime, ImGui::GetIO().Framerate);
         {
           std::lock_guard<std::mutex> freqLock(updateFreqMutex);
           ImGui::DragInt("Updates Per Second", &numUpdatesPerSec, 1.0f, 1, 100);
         }
-        ImGui::DragInt("Number of Elements", &dataSize, 1.0f, 10, 10000);
         const char* items[] = { "Selection", "Bubble", "Insertion", "Merge", "Quick" };
         ImGui::Combo("Available Sorts", &item_current, items, IM_ARRAYSIZE(items));
         startClicked = ImGui::Button("Start");
@@ -284,7 +300,7 @@ int main(int argc, char** argv)
       // Reset data in the right situation
       if (resetClicked || (startClicked && was_running) || (startClicked && array.size() != dataSize)) {
         array = std::vector<SortableRenderData>(dataSize);
-        diff = 1280.0f / array.size();
+        diff = static_cast<float>(width) / array.size();
 
         // Regenerate the data to sort for next sort
         GetArray(array);
